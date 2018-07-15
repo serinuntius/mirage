@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 	"time"
@@ -69,8 +68,6 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 			if trimedEnv == "" || strings.HasPrefix(trimedEnv, "#") {
 				continue
 			}
-			log.Println(trimedEnv)
-
 			dockerEnv = append(dockerEnv, trimedEnv)
 		}
 	}
@@ -107,7 +104,7 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 
 	container, err = d.Client.InspectContainer(container.ID)
 	if err != nil {
-		log.Println("cannot inspect container")
+		fmt.Println("cannot inspect container")
 		return err
 	}
 
@@ -118,7 +115,7 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 	if oldContainerID != "" {
 		err = d.Client.StopContainer(oldContainerID, 5)
 		if err != nil {
-			fmt.Printf(err.Error()) // TODO log warning
+			fmt.Printf(err.Error()) // TODO fmt warning
 			return err
 		}
 	}
@@ -135,7 +132,7 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 	var infoData []byte
 	infoData, err = json.Marshal(info)
 	if err != nil {
-		log.Println("cannot json marshal")
+		fmt.Println("cannot json marshal")
 		return err
 	}
 
@@ -147,7 +144,7 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 
 	err = ms.AddToSubdomainMap(subdomain)
 	if err != nil {
-		log.Println("cannot add to sub domain map")
+		fmt.Println("cannot add to sub domain map")
 		return err
 	}
 
@@ -168,7 +165,7 @@ func (d *Docker) getContainerIDFromSubdomain(subdomain string, ms *MirageStorage
 	var info Information
 	err = json.Unmarshal(data, &info)
 	if err != nil {
-		log.Println("cannot unmarshal")
+		fmt.Println("cannot unmarshal")
 	}
 	//dump.Dump(info)
 	containerID := string(info.ID)
@@ -188,7 +185,7 @@ func (d *Docker) Terminate(subdomain string) error {
 
 	err = ms.RemoveFromSubdomainMap(subdomain)
 	if err != nil {
-		log.Println("cannot remove from sub domain map")
+		fmt.Println("cannot remove from sub domain map")
 		return err
 	}
 

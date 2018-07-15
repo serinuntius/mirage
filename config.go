@@ -13,7 +13,8 @@ type Config struct {
 	Listen    Listen     `yaml:"listen"`
 	Docker    DockerCfg  `yaml:"docker"`
 	Storage   StorageCfg `yaml:"storage"`
-	Parameter Paramters  `yaml:"parameters"`
+	Parameter Parameters `yaml:"parameters"`
+	EnvFile   string     `yaml:"env_file"`
 }
 
 type Host struct {
@@ -50,7 +51,7 @@ type Parameter struct {
 	Regexp   regexp.Regexp
 }
 
-type Paramters []*Parameter
+type Parameters []*Parameter
 
 func NewConfig(path string) *Config {
 	// default config
@@ -72,6 +73,7 @@ func NewConfig(path string) *Config {
 			DataDir: "./data",
 			HtmlDir: "./html",
 		},
+		EnvFile: "",
 	}
 
 	data, err := ioutil.ReadFile(path)

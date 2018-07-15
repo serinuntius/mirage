@@ -4,7 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
+
+	"bytes"
+	"io/ioutil"
+	"log"
 
 	"github.com/fsouza/go-dockerclient"
 )
@@ -41,7 +46,7 @@ func NewDocker(cfg *Config, ms *MirageStorage) *Docker {
 }
 
 func (d *Docker) Launch(subdomain string, image string, name string, option map[string]string) error {
-	var dockerEnv []string = make([]string, 0)
+	dockerEnv := make([]string, 0)
 	for _, v := range d.cfg.Parameter {
 		if option[v.Name] == "" {
 			continue
@@ -50,6 +55,25 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 		dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", v.Env, option[v.Name]))
 	}
 	dockerEnv = append(dockerEnv, fmt.Sprintf("SUBDOMAIN=%s", subdomain))
+
+	if d.cfg.EnvFile != "" {
+		b, err := ioutil.ReadFile(d.cfg.EnvFile)
+		if err != nil {
+			fmt.Println("cannot read env file")
+			return err
+		}
+
+		bs := bytes.Split(b, []byte("\n"))
+		for _, env := range bs {
+			trimedEnv := strings.TrimSpace(string(env))
+			if trimedEnv == "" || strings.HasPrefix(trimedEnv, "#") {
+				continue
+			}
+			log.Println(trimedEnv)
+
+			dockerEnv = append(dockerEnv, trimedEnv)
+		}
+	}
 
 	opt := docker.CreateContainerOptions{
 		Name: name,
@@ -72,6 +96,12 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 	}
 
 	container, err = d.Client.InspectContainer(container.ID)
+	if err != nil {
+		log.Println("cannot inspect container")
+		return err
+	}
+
+	log.Printf("container: %#v", container)
 
 	ms := d.Storage
 
@@ -95,6 +125,10 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 	}
 	var infoData []byte
 	infoData, err = json.Marshal(info)
+	if err != nil {
+		log.Println("cannot marshal json")
+		return err
+	}
 
 	err = ms.Set(fmt.Sprintf("subdomain:%s", subdomain), infoData)
 	if err != nil {
@@ -102,7 +136,12 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 		return err
 	}
 
-	ms.AddToSubdomainMap(subdomain)
+	err = ms.AddToSubdomainMap(subdomain)
+	if err != nil {
+		log.Println("cannot AddToSubdomainMap")
+		return err
+	}
+
 	app.ReverseProxy.AddSubdomain(subdomain, container.NetworkSettings.IPAddress)
 
 	return nil
@@ -164,7 +203,7 @@ func (d *Docker) List() ([]Information, error) {
 	containers, _ := d.Client.ListContainers(docker.ListContainersOptions{})
 	sort.Sort(ContainerSlice(containers))
 
-	result := []Information{}
+	var result []Information
 	for _, subdomain := range subdomainList {
 		infoData, err := ms.Get(fmt.Sprintf("subdomain:%s", subdomain))
 		if err != nil {

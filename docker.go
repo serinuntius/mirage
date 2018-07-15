@@ -3,13 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 	"time"
 
 	"bytes"
 	"io/ioutil"
-	"log"
 
 	"github.com/fsouza/go-dockerclient"
 )
@@ -81,6 +81,15 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 			Image: image,
 			Env:   dockerEnv,
 		},
+		HostConfig: d.cfg.Docker.HostConfig,
+	}
+
+	if len(opt.HostConfig.PortBindings) != 0 {
+		opt.Config.ExposedPorts = make(map[docker.Port]struct{},
+			len(opt.HostConfig.PortBindings))
+		for key := range opt.HostConfig.PortBindings {
+			opt.Config.ExposedPorts[key] = struct{}{}
+		}
 	}
 
 	container, err := d.Client.CreateContainer(opt)
@@ -101,8 +110,6 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 		return err
 	}
 
-	log.Printf("container: %#v", container)
-
 	ms := d.Storage
 
 	// terminate old container
@@ -111,6 +118,7 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 		err = d.Client.StopContainer(oldContainerID, 5)
 		if err != nil {
 			fmt.Printf(err.Error()) // TODO log warning
+			return err
 		}
 	}
 
@@ -126,7 +134,7 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 	var infoData []byte
 	infoData, err = json.Marshal(info)
 	if err != nil {
-		log.Println("cannot marshal json")
+		log.Println("cannot json marshal")
 		return err
 	}
 
@@ -138,7 +146,7 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 
 	err = ms.AddToSubdomainMap(subdomain)
 	if err != nil {
-		log.Println("cannot AddToSubdomainMap")
+		log.Println("cannot add to sub domain map")
 		return err
 	}
 
@@ -157,7 +165,10 @@ func (d *Docker) getContainerIDFromSubdomain(subdomain string, ms *MirageStorage
 		return ""
 	}
 	var info Information
-	json.Unmarshal(data, &info)
+	err = json.Unmarshal(data, &info)
+	if err != nil {
+		log.Println("cannot unmarshal")
+	}
 	//dump.Dump(info)
 	containerID := string(info.ID)
 
@@ -174,7 +185,12 @@ func (d *Docker) Terminate(subdomain string) error {
 		return err
 	}
 
-	ms.RemoveFromSubdomainMap(subdomain)
+	err = ms.RemoveFromSubdomainMap(subdomain)
+	if err != nil {
+		log.Println("cannot remove from sub domain map")
+		return err
+	}
+
 	app.ReverseProxy.RemoveSubdomain(subdomain)
 
 	return nil

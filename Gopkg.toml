@@ -30,10 +30,6 @@
   version = "1.2.2"
 
 [[constraint]]
-  name = "github.com/k0kubun/pp"
-  version = "2.3.0"
-
-[[constraint]]
   branch = "master"
   name = "github.com/methane/rproxy"
 

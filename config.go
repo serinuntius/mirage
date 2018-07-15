@@ -5,6 +5,7 @@ import (
 	"log"
 	"regexp"
 
+	"github.com/fsouza/go-dockerclient"
 	"gopkg.in/yaml.v1"
 )
 
@@ -34,8 +35,9 @@ type PortMap struct {
 }
 
 type DockerCfg struct {
-	Endpoint     string `yaml:"endpoint"`
-	DefaultImage string `yaml:"default_image"`
+	Endpoint     string             `yaml:"endpoint"`
+	DefaultImage string             `yaml:"default_image"`
+	HostConfig   *docker.HostConfig `yaml:"host_config"` // TODO depending docker.HostConfig is so risky?
 }
 
 type StorageCfg struct {

@@ -13,8 +13,8 @@
 [[projects]]
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
-  revision = "7da180ee92d8bd8bb8c37fc560e673e6557c392f"
-  version = "v0.4.7"
+  revision = "67921128fb397dd80339870d2193d6b1e6856fd4"
+  version = "v0.4.8"
 
 [[projects]]
   branch = "master"
@@ -94,24 +94,6 @@
   revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
 
 [[projects]]
-  name = "github.com/k0kubun/pp"
-  packages = ["."]
-  revision = "027a6d1765d673d337e687394dbe780dd64e2a1e"
-  version = "v2.3.0"
-
-[[projects]]
-  name = "github.com/mattn/go-colorable"
-  packages = ["."]
-  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
-  version = "v0.0.9"
-
-[[projects]]
-  name = "github.com/mattn/go-isatty"
-  packages = ["."]
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
-  version = "v0.0.3"
-
-[[projects]]
   branch = "master"
   name = "github.com/methane/rproxy"
   packages = ["."]
@@ -171,7 +153,7 @@
     "leveldb/table",
     "leveldb/util"
   ]
-  revision = "0d5a0ceb10cf9ab89fdd744cc8c50a83134f6697"
+  revision = "c4c61651e9e37fa117f53c5a906d3b63090d8445"
 
 [[projects]]
   branch = "master"
@@ -186,7 +168,7 @@
     "unix",
     "windows"
   ]
-  revision = "7138fd3d9dc8335c567ca206f4333fb75eb05d56"
+  revision = "ac767d655b305d4e9612f5f6e33120b9176c4ad4"
 
 [[projects]]
   branch = "v2"
@@ -203,6 +185,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "073411075c0f6b7728b2bf81fb3784a0c28f8379c364003db253c1238d927c5d"
+  inputs-digest = "eaa0a3343318a5cb1931a859b8501dc1e07ea8b837d5cafde824c8b9f451ff69"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -96,6 +96,13 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 		return err
 	}
 
+	for _, network := range d.cfg.Docker.NetworkConnectionOptions {
+		if err := d.Client.ConnectNetwork(container.ID, *network); err != nil {
+			fmt.Println("cannot connect container")
+			return err
+		}
+	}
+
 	err = d.Client.StartContainer(container.ID, nil)
 	if err != nil {
 		fmt.Println("cannot start container")

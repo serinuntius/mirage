@@ -35,10 +35,13 @@ type PortMap struct {
 }
 
 type DockerCfg struct {
-	Endpoint     string             `yaml:"endpoint"`
-	DefaultImage string             `yaml:"default_image"`
-	HostConfig   *docker.HostConfig `yaml:"host_config"` // TODO depending docker.HostConfig is so risky?
+	Endpoint                 string             `yaml:"endpoint"`
+	DefaultImage             string             `yaml:"default_image"`
+	HostConfig               *docker.HostConfig `yaml:"host_config"` // TODO depending docker.HostConfig is so risky?
+	NetworkConnectionOptions DockerNetworks     `yaml:"network_connection_options"`
 }
+
+type DockerNetworks []*docker.NetworkConnectionOptions
 
 type StorageCfg struct {
 	DataDir string `yaml:"datadir"`

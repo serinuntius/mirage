@@ -72,11 +72,14 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 		}
 	}
 
+	fmt.Printf("%#v \n", d.cfg.Docker.Mounts)
+
 	opt := docker.CreateContainerOptions{
 		Name: name,
 		Config: &docker.Config{
-			Image: image,
-			Env:   dockerEnv,
+			Image:  image,
+			Env:    dockerEnv,
+			Mounts: d.cfg.Docker.Mounts,
 		},
 		HostConfig: d.cfg.Docker.HostConfig,
 	}

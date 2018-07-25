@@ -39,6 +39,7 @@ type DockerCfg struct {
 	DefaultImage string             `yaml:"default_image"`
 	HostConfig   *docker.HostConfig `yaml:"host_config"` // TODO depending docker.HostConfig is so risky?
 	Networks     DockerNetworks     `yaml:"docker_networks"`
+	Mounts       []docker.Mount     `yaml:"mounts"`
 }
 
 type DockerNetworks []*DockerNetwork

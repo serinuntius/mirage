@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -62,9 +63,11 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 			return err
 		}
 
-		bs := bytes.Split(b, []byte("\n"))
-		for _, env := range bs {
-			trimedEnv := strings.TrimSpace(string(env))
+
+
+		envedStrings := strings.Split(os.ExpandEnv(string(b)), "\n")
+		for _, env := range envedStrings {
+			trimedEnv := strings.TrimSpace(env)
 			if trimedEnv == "" || strings.HasPrefix(trimedEnv, "#") {
 				continue
 			}

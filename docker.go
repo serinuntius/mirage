@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"bytes"
 	"io/ioutil"
 
 	"github.com/fsouza/go-dockerclient"
@@ -62,8 +61,6 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 			fmt.Println("cannot read env file")
 			return err
 		}
-
-
 
 		envedStrings := strings.Split(os.ExpandEnv(string(b)), "\n")
 		for _, env := range envedStrings {

@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log"
 	"math/rand"
 	"time"
 
@@ -27,18 +27,18 @@ func main() {
 	flag.Parse()
 
 	if showVersion {
-		fmt.Printf("mirage %v (%v)\n", version, buildDate)
+		log.Printf("mirage %v (%v)\n", version, buildDate)
 		return
 	}
 
-	fmt.Println("Launch succeeded!")
+	log.Println("Launch succeeded!")
 
 	cfg := NewConfig(*confFile)
 
 	if showConfig {
-		fmt.Println("mirage config:")
+		log.Println("mirage config:")
 		pp.Print(cfg)
-		fmt.Println("") // add linebreak
+		log.Println("") // add linebreak
 	}
 
 	Setup(cfg)

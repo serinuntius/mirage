@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"strings"
@@ -32,7 +33,7 @@ type Docker struct {
 func NewDocker(cfg *Config, ms *MirageStorage) *Docker {
 	client, err := docker.NewClient(cfg.Docker.Endpoint)
 	if err != nil {
-		fmt.Println("cannot create docker client")
+		log.Println("cannot create docker client")
 		return nil
 	}
 	d := &Docker{
@@ -58,7 +59,7 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 	if d.cfg.EnvFile != "" {
 		b, err := ioutil.ReadFile(d.cfg.EnvFile)
 		if err != nil {
-			fmt.Println("cannot read env file")
+			log.Println("cannot read env file")
 			return err
 		}
 
@@ -72,7 +73,7 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 		}
 	}
 
-	fmt.Printf("%#v \n", d.cfg.Docker.Mounts)
+	log.Printf("%#v \n", d.cfg.Docker.Mounts)
 
 	opt := docker.CreateContainerOptions{
 		Name: name,
@@ -95,7 +96,7 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 
 	container, err := d.Client.CreateContainer(opt)
 	if err != nil {
-		fmt.Println("cannot create container")
+		log.Println("cannot create container")
 		return err
 	}
 
@@ -104,20 +105,20 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 			Container: container.ID,
 		}
 		if err := d.Client.ConnectNetwork(network.Name, opt); err != nil {
-			fmt.Println("cannot connect container")
+			log.Println("cannot connect container")
 			return err
 		}
 	}
 
 	err = d.Client.StartContainer(container.ID, nil)
 	if err != nil {
-		fmt.Println("cannot start container")
+		log.Println("cannot start container")
 		return err
 	}
 
 	container, err = d.Client.InspectContainer(container.ID)
 	if err != nil {
-		fmt.Println("cannot inspect container")
+		log.Println("cannot inspect container")
 		return err
 	}
 
@@ -128,7 +129,7 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 	if oldContainerID != "" {
 		err = d.Client.StopContainer(oldContainerID, 5)
 		if err != nil {
-			fmt.Printf(err.Error()) // TODO log warning
+			log.Printf(err.Error()) // TODO log warning
 			return err
 		}
 	}
@@ -145,19 +146,19 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 	var infoData []byte
 	infoData, err = json.Marshal(info)
 	if err != nil {
-		fmt.Println("cannot json marshal")
+		log.Println("cannot json marshal")
 		return err
 	}
 
 	err = ms.Set(fmt.Sprintf("subdomain:%s", subdomain), infoData)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return err
 	}
 
 	err = ms.AddToSubdomainMap(subdomain)
 	if err != nil {
-		fmt.Println("cannot add to sub domain map")
+		log.Println("cannot add to sub domain map")
 		return err
 	}
 
@@ -172,13 +173,13 @@ func (d *Docker) getContainerIDFromSubdomain(subdomain string, ms *MirageStorage
 		if err == ErrNotFound {
 			return ""
 		}
-		fmt.Printf("cannot find subdomain:%s, err:%s", subdomain, err.Error())
+		log.Printf("cannot find subdomain:%s, err:%s", subdomain, err.Error())
 		return ""
 	}
 	var info Information
 	err = json.Unmarshal(data, &info)
 	if err != nil {
-		fmt.Println("cannot unmarshal")
+		log.Println("cannot unmarshal")
 	}
 	//dump.Dump(info)
 	containerID := string(info.ID)
@@ -198,7 +199,7 @@ func (d *Docker) Terminate(subdomain string) error {
 
 	err = ms.RemoveFromSubdomainMap(subdomain)
 	if err != nil {
-		fmt.Println("cannot remove from sub domain map")
+		log.Println("cannot remove from sub domain map")
 		return err
 	}
 
@@ -234,7 +235,7 @@ func (d *Docker) List() ([]Information, error) {
 	for _, subdomain := range subdomainList {
 		infoData, err := ms.Get(fmt.Sprintf("subdomain:%s", subdomain))
 		if err != nil {
-			fmt.Printf("ms.Get failed err=%s\n", err.Error())
+			log.Printf("ms.Get failed err=%s\n", err.Error())
 			continue
 		}
 

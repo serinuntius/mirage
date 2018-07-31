@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -68,7 +69,7 @@ func (r *ReverseProxy) AddSubdomain(subdomain string, ipaddress string) {
 		handlers[v.ListenPort] = handler
 	}
 
-	fmt.Println("add subdomain: ", subdomain)
+	log.Println("add subdomain: ", subdomain)
 
 	// add to map
 	r.mu.Lock()

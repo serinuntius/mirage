@@ -73,23 +73,22 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 		}
 	}
 
-	log.Printf("%#v \n", d.cfg.Docker.Mounts)
-
 	opt := docker.CreateContainerOptions{
 		Name: name,
 		Config: &docker.Config{
-			Image:  image,
-			Env:    dockerEnv,
-			Mounts: d.cfg.Docker.Mounts,
+			Image: image,
+			Env:   dockerEnv,
 		},
 		HostConfig: d.cfg.Docker.HostConfig,
 	}
 
 	// fill opt.Config.ExposedPorts
 	if len(opt.HostConfig.PortBindings) != 0 {
-		opt.Config.ExposedPorts = make(map[docker.Port]struct{},
-			len(opt.HostConfig.PortBindings))
+		log.Printf("opt.HostConfig.PortBindings: %d. \n", len(opt.HostConfig.PortBindings))
+		opt.Config.ExposedPorts = make(map[docker.Port]struct{}, len(opt.HostConfig.PortBindings))
+		log.Printf("opt.Config.ExposedPorts: %#v. \n", opt.Config.ExposedPorts)
 		for key := range opt.HostConfig.PortBindings {
+			log.Printf("port key: %s", key)
 			opt.Config.ExposedPorts[key] = struct{}{}
 		}
 	}

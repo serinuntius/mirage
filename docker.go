@@ -3,8 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
 	"sort"
+	"strings"
 	"time"
+
+	"io/ioutil"
 
 	"github.com/fsouza/go-dockerclient"
 )
@@ -28,7 +33,7 @@ type Docker struct {
 func NewDocker(cfg *Config, ms *MirageStorage) *Docker {
 	client, err := docker.NewClient(cfg.Docker.Endpoint)
 	if err != nil {
-		fmt.Println("cannot create docker client")
+		log.Println("cannot create docker client")
 		return nil
 	}
 	d := &Docker{
@@ -41,7 +46,7 @@ func NewDocker(cfg *Config, ms *MirageStorage) *Docker {
 }
 
 func (d *Docker) Launch(subdomain string, image string, name string, option map[string]string) error {
-	var dockerEnv []string = make([]string, 0)
+	dockerEnv := make([]string, 0)
 	for _, v := range d.cfg.Parameter {
 		if option[v.Name] == "" {
 			continue
@@ -50,6 +55,23 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 		dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", v.Env, option[v.Name]))
 	}
 	dockerEnv = append(dockerEnv, fmt.Sprintf("SUBDOMAIN=%s", subdomain))
+
+	if d.cfg.EnvFile != "" {
+		b, err := ioutil.ReadFile(d.cfg.EnvFile)
+		if err != nil {
+			log.Println("cannot read env file")
+			return err
+		}
+
+		envedStrings := strings.Split(os.ExpandEnv(string(b)), "\n")
+		for _, env := range envedStrings {
+			trimedEnv := strings.TrimSpace(env)
+			if trimedEnv == "" || strings.HasPrefix(trimedEnv, "#") {
+				continue
+			}
+			dockerEnv = append(dockerEnv, trimedEnv)
+		}
+	}
 
 	opt := docker.CreateContainerOptions{
 		Name: name,
@@ -62,26 +84,42 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 
 	// fill opt.Config.ExposedPorts
 	if len(opt.HostConfig.PortBindings) != 0 {
-		opt.Config.ExposedPorts = make(map[docker.Port]struct{},
-			len(opt.HostConfig.PortBindings))
+		log.Printf("opt.HostConfig.PortBindings: %d. \n", len(opt.HostConfig.PortBindings))
+		opt.Config.ExposedPorts = make(map[docker.Port]struct{}, len(opt.HostConfig.PortBindings))
+		log.Printf("opt.Config.ExposedPorts: %#v. \n", opt.Config.ExposedPorts)
 		for key := range opt.HostConfig.PortBindings {
+			log.Printf("port key: %s", key)
 			opt.Config.ExposedPorts[key] = struct{}{}
 		}
 	}
 
 	container, err := d.Client.CreateContainer(opt)
 	if err != nil {
-		fmt.Println("cannot create container")
+		log.Println("cannot create container")
 		return err
+	}
+
+	for _, network := range d.cfg.Docker.Networks {
+		opt := docker.NetworkConnectionOptions{
+			Container: container.ID,
+		}
+		if err := d.Client.ConnectNetwork(network.Name, opt); err != nil {
+			log.Println("cannot connect container")
+			return err
+		}
 	}
 
 	err = d.Client.StartContainer(container.ID, nil)
 	if err != nil {
-		fmt.Println("cannot start container")
+		log.Println("cannot start container")
 		return err
 	}
 
 	container, err = d.Client.InspectContainer(container.ID)
+	if err != nil {
+		log.Println("cannot inspect container")
+		return err
+	}
 
 	ms := d.Storage
 
@@ -90,7 +128,7 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 	if oldContainerID != "" {
 		err = d.Client.StopContainer(oldContainerID, 5)
 		if err != nil {
-			fmt.Printf(err.Error()) // TODO log warning
+			log.Printf(err.Error()) // TODO log warning
 		}
 	}
 
@@ -105,14 +143,23 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 	}
 	var infoData []byte
 	infoData, err = json.Marshal(info)
-
-	err = ms.Set(fmt.Sprintf("subdomain:%s", subdomain), infoData)
 	if err != nil {
-		fmt.Println(err)
+		log.Println("cannot json marshal")
 		return err
 	}
 
-	ms.AddToSubdomainMap(subdomain)
+	err = ms.Set(fmt.Sprintf("subdomain:%s", subdomain), infoData)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	err = ms.AddToSubdomainMap(subdomain)
+	if err != nil {
+		log.Println("cannot add to sub domain map")
+		return err
+	}
+
 	app.ReverseProxy.AddSubdomain(subdomain, container.NetworkSettings.IPAddress)
 
 	return nil
@@ -124,11 +171,14 @@ func (d *Docker) getContainerIDFromSubdomain(subdomain string, ms *MirageStorage
 		if err == ErrNotFound {
 			return ""
 		}
-		fmt.Printf("cannot find subdomain:%s, err:%s", subdomain, err.Error())
+		log.Printf("cannot find subdomain:%s, err:%s", subdomain, err.Error())
 		return ""
 	}
 	var info Information
-	json.Unmarshal(data, &info)
+	err = json.Unmarshal(data, &info)
+	if err != nil {
+		log.Println("cannot unmarshal")
+	}
 	//dump.Dump(info)
 	containerID := string(info.ID)
 
@@ -145,7 +195,12 @@ func (d *Docker) Terminate(subdomain string) error {
 		return err
 	}
 
-	ms.RemoveFromSubdomainMap(subdomain)
+	err = ms.RemoveFromSubdomainMap(subdomain)
+	if err != nil {
+		log.Println("cannot remove from sub domain map")
+		return err
+	}
+
 	app.ReverseProxy.RemoveSubdomain(subdomain)
 
 	return nil
@@ -174,11 +229,11 @@ func (d *Docker) List() ([]Information, error) {
 	containers, _ := d.Client.ListContainers(docker.ListContainersOptions{})
 	sort.Sort(ContainerSlice(containers))
 
-	result := []Information{}
+	var result []Information
 	for _, subdomain := range subdomainList {
 		infoData, err := ms.Get(fmt.Sprintf("subdomain:%s", subdomain))
 		if err != nil {
-			fmt.Printf("ms.Get failed err=%s\n", err.Error())
+			log.Printf("ms.Get failed err=%s\n", err.Error())
 			continue
 		}
 

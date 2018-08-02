@@ -20,13 +20,13 @@ type MirageStorage struct {
 func NewMirageStorage(cfg *Config) *MirageStorage {
 	fileStorage, err := storage.OpenFile(cfg.Storage.DataDir, false)
 	if err != nil {
-		fmt.Println("cannot open leveldb fileStorage")
+		log.Println("cannot open leveldb fileStorage")
 		log.Fatal(err)
 	}
 
 	storage, err := leveldb.Open(fileStorage, &opt.Options{})
 	if err != nil {
-		fmt.Println("cannot open leveldb")
+		log.Println("cannot open leveldb")
 		log.Fatal(err)
 	}
 
@@ -66,7 +66,7 @@ func (ms *MirageStorage) AddToSubdomainMap(subdomain string) error {
 
 	if beforeLen == len(subdomainMap) {
 		// need not to update
-		fmt.Println("subdomainMap length is not changed!")
+		log.Println("subdomainMap length is not changed!")
 		return nil
 	}
 

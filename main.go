@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log"
+	"math/rand"
+	"time"
 
 	"github.com/k0kubun/pp"
 )
@@ -11,6 +13,10 @@ var (
 	version   string
 	buildDate string
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func main() {
 	confFile := flag.String("conf", "config.yml", "specify config file")
@@ -21,18 +27,18 @@ func main() {
 	flag.Parse()
 
 	if showVersion {
-		fmt.Printf("mirage %v (%v)\n", version, buildDate)
+		log.Printf("mirage %v (%v)\n", version, buildDate)
 		return
 	}
 
-	fmt.Println("Launch succeeded!")
+	log.Println("Launch succeeded!")
 
 	cfg := NewConfig(*confFile)
 
 	if showConfig {
-		fmt.Println("mirage config:")
+		log.Println("mirage config:")
 		pp.Print(cfg)
-		fmt.Println("") // add linebreak
+		log.Println("") // add linebreak
 	}
 
 	Setup(cfg)

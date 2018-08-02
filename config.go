@@ -6,7 +6,6 @@ import (
 	"regexp"
 
 	"github.com/fsouza/go-dockerclient"
-
 	"gopkg.in/yaml.v1"
 )
 
@@ -15,7 +14,8 @@ type Config struct {
 	Listen    Listen     `yaml:"listen"`
 	Docker    DockerCfg  `yaml:"docker"`
 	Storage   StorageCfg `yaml:"storage"`
-	Parameter Paramters  `yaml:"parameters"`
+	Parameter Parameters `yaml:"parameters"`
+	EnvFile   string     `yaml:"env_file"`
 }
 
 type Host struct {
@@ -38,7 +38,13 @@ type DockerCfg struct {
 	Endpoint     string             `yaml:"endpoint"`
 	DefaultImage string             `yaml:"default_image"`
 	HostConfig   *docker.HostConfig `yaml:"host_config"` // TODO depending docker.HostConfig is so risky?
+	Networks     DockerNetworks     `yaml:"docker_networks"`
+}
 
+type DockerNetworks []*DockerNetwork
+
+type DockerNetwork struct {
+	Name string `yaml:"name"`
 }
 
 type StorageCfg struct {
@@ -54,7 +60,7 @@ type Parameter struct {
 	Regexp   regexp.Regexp
 }
 
-type Paramters []*Parameter
+type Parameters []*Parameter
 
 func NewConfig(path string) *Config {
 	// default config
@@ -76,6 +82,7 @@ func NewConfig(path string) *Config {
 			DataDir: "./data",
 			HtmlDir: "./html",
 		},
+		EnvFile: "",
 	}
 
 	data, err := ioutil.ReadFile(path)

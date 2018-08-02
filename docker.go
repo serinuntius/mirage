@@ -129,7 +129,6 @@ func (d *Docker) Launch(subdomain string, image string, name string, option map[
 		err = d.Client.StopContainer(oldContainerID, 5)
 		if err != nil {
 			log.Printf(err.Error()) // TODO log warning
-			return err
 		}
 	}
 
